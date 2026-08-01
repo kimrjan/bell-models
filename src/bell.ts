@@ -145,12 +145,6 @@ export class Bell {
     return size;
   }
 
-  private _getCenter(obj: THREE.Object3D) {
-    const size = new THREE.Vector3();
-    new THREE.Box3().setFromObject(obj, true).getCenter(size);
-    return size;
-  }
-
   private _getOrigin(obj: THREE.Object3D) {
     const position = new THREE.Vector3();
     obj.getWorldPosition(position);
