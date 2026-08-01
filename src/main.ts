@@ -109,7 +109,7 @@ window.addEventListener("resize", () => {
 
 // --- Animation Loop ---
 const timer = new THREE.Timer();
-function animate(timestamp: number, frame: XRFrame) {
+function animate(timestamp: number) {
   controls.update();
   timer.update(timestamp);
 
