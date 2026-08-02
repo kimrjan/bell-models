@@ -9,6 +9,7 @@ const SIDE = "Side";
 const PIVOT = "Pivot";
 const CHAIN = "Chain";
 const LUG = "Lug";
+const STATIC = "Static";
 
 function left(name: string) {
   return `${name}L`;
@@ -33,6 +34,7 @@ export class Bell {
   private _rightChain: THREE.Object3D;
   private _scaleBeam: THREE.Object3D;
   private _leftLug: THREE.Object3D;
+  private _staticPart: THREE.Object3D;
 
   private _pivotRadius: number;
   private _bottomRadius: number;
@@ -42,6 +44,11 @@ export class Bell {
   private _scaleBeamEffectiveLength: number;
 
   private _pendulumSimulator: ChurchBellSimulator;
+
+  private _isStaticVisible: boolean = true;
+  public get isStaticVisible(): boolean {
+    return this._isStaticVisible;
+  }
 
   constructor(model: THREE.Object3D) {
     const bell = model.getObjectByName(BELL);
@@ -54,7 +61,7 @@ export class Bell {
     const rightChain = model.getObjectByName(right(CHAIN));
     const scaleBeam = model.getObjectByName(SCALE_BEAM);
     const leftLug = model.getObjectByName(left(LUG));
-
+    const staticParts = model.getObjectByName(STATIC);
 
     if (
       !isObject3D(bell) ||
@@ -66,7 +73,8 @@ export class Bell {
       !isObject3D(leftChain) ||
       !isObject3D(rightChain) ||
       !isObject3D(scaleBeam) ||
-      !isObject3D(leftLug)
+      !isObject3D(leftLug) ||
+      !isObject3D(staticParts)
     ) {
       console.log(
         bell,
@@ -78,7 +86,8 @@ export class Bell {
         leftChain,
         rightChain,
         scaleBeam,
-        leftLug
+        leftLug,
+        staticParts,
       );
       throw Error("Invalid objects");
     }
@@ -93,11 +102,14 @@ export class Bell {
     this._rightChain = rightChain;
     this._scaleBeam = scaleBeam;
     this._leftLug = leftLug;
+    this._staticPart = staticParts;
 
     this._pivotRadius = this._getSize(this._pivot).x / 2;
     this._bottomRadius = this._getSize(this._bottom).y;
     this._sideRadius = this._getSize(this._leftSide).x;
-    this._lugRadius = this._getOrigin(this._leftLug).sub(this._getOrigin(this._leftSide)).x;
+    this._lugRadius = this._getOrigin(this._leftLug).sub(
+      this._getOrigin(this._leftSide),
+    ).x;
 
     const clapperSize = this._getSize(this._clapper);
 
@@ -116,27 +128,40 @@ export class Bell {
       clapperStrikeAngle: (Math.PI / 180) * 24.7, // ~20 degrees inner clearance
       clapperRestitution: 0.15, // Slight rebound
     });
-    
+
     this._leftChainOriginalPosition = this._leftChain.position.clone();
-    this._scaleBeamEffectiveLength = this._leftChain.position.distanceTo(this._rightChain.position);
+    this._scaleBeamEffectiveLength = this._leftChain.position.distanceTo(
+      this._rightChain.position,
+    );
   }
 
   update(dt: number) {
     const state = this._pendulumSimulator.update(dt);
 
-    const sideAngle = state.bellAngle * this._pivotRadius / this._sideRadius;
-    this._setRotation(this._bell, 'z', state.bellAngle);
-    this._setRotation(this._bottom, 'z', state.bellAngle * this._pivotRadius / this._bottomRadius);
-    this._setRotation(this._rightSide, 'y', sideAngle);
-    this._setRotation(this._leftSide, 'y', -sideAngle);
-    this._setRotation(this._clapper, 'z', state.clapperAngle);
+    const sideAngle = (state.bellAngle * this._pivotRadius) / this._sideRadius;
+    this._setRotation(this._bell, "z", state.bellAngle);
+    this._setRotation(
+      this._bottom,
+      "z",
+      (state.bellAngle * this._pivotRadius) / this._bottomRadius,
+    );
+    this._setRotation(this._rightSide, "y", sideAngle);
+    this._setRotation(this._leftSide, "y", -sideAngle);
+    this._setRotation(this._clapper, "z", state.clapperAngle);
 
     const yChange = Math.tan(sideAngle) * this._lugRadius;
     this._leftChain.position.y = this._leftChainOriginalPosition.y + yChange;
     this._rightChain.position.y = this._leftChainOriginalPosition.y - yChange;
 
-    const scaleAngle = Math.asin(2 * yChange / this._scaleBeamEffectiveLength);
-    this._setRotation(this._scaleBeam, 'y', -scaleAngle);
+    const scaleAngle = Math.asin(
+      (2 * yChange) / this._scaleBeamEffectiveLength,
+    );
+    this._setRotation(this._scaleBeam, "y", -scaleAngle);
+  }
+
+  toggleStaticVisible() {
+    this._isStaticVisible = !this._isStaticVisible;
+    this._staticPart.visible = this._isStaticVisible;
   }
 
   private _getSize(obj: THREE.Object3D) {

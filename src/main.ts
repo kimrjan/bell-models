@@ -4,6 +4,9 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { Bell } from "./bell";
 
+const HIDE_STATIC = "visibility\_off";
+const SHOW_STATIC = "visibility";
+
 const canvas = document.querySelector("#webgl");
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1e1e24);
@@ -15,10 +18,13 @@ const sizes = {
 
 const rgbeLoader = new HDRLoader();
 
-rgbeLoader.load(`${import.meta.env.BASE_URL}studio_small_09_1k.hdr`, (texture) => {
-  texture.mapping = THREE.EquirectangularReflectionMapping;
-  scene.environment = texture;
-});
+rgbeLoader.load(
+  `${import.meta.env.BASE_URL}studio_small_09_1k.hdr`,
+  (texture) => {
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = texture;
+  },
+);
 
 // --- Camera ---
 const camera = new THREE.PerspectiveCamera(
@@ -27,7 +33,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000,
 );
-camera.position.set(0, 0.5, 8);
+camera.position.set(8, 0.5, 4);
 scene.add(camera);
 
 // --- Renderer ---
@@ -37,10 +43,11 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 0.4;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 // --- Controls ---
 const controls = new OrbitControls(camera, canvas as HTMLElement);
@@ -52,10 +59,10 @@ controls.target.set(0, 1, 0);
 controls.update();
 
 // --- Lighting ---
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
 scene.add(ambientLight);
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
 dirLight.position.set(5, 10, 7.5);
 dirLight.castShadow = true;
 dirLight.shadow.normalBias = 0.05;
@@ -84,12 +91,7 @@ loader.load(
     scene.add(model);
     bell = new Bell(model);
   },
-  (xhr) => {
-    if (xhr.lengthComputable) {
-      const percentComplete = (xhr.loaded / xhr.total) * 100;
-      console.log(`Loading: ${Math.round(percentComplete)}%`);
-    }
-  },
+  () => {},
   (error) => {
     console.error("An error occurred loading the model:", error);
   },
@@ -120,3 +122,13 @@ function animate(timestamp: number) {
 }
 
 renderer.setAnimationLoop(animate);
+
+const button = document.getElementById("toggleBtn");
+const buttonIcon = document.getElementById("toggleButtonIcon");
+
+button?.addEventListener("click", () => {
+  if (!bell) return;
+
+  bell.toggleStaticVisible();
+  if (buttonIcon) buttonIcon.textContent = bell.isStaticVisible ? HIDE_STATIC : SHOW_STATIC;
+});
