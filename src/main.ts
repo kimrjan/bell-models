@@ -15,7 +15,7 @@ const sizes = {
 
 const rgbeLoader = new HDRLoader();
 
-rgbeLoader.load("/studio_small_09_1k.hdr", (texture) => {
+rgbeLoader.load(`${import.meta.env.BASE_URL}studio_small_09_1k.hdr`, (texture) => {
   texture.mapping = THREE.EquirectangularReflectionMapping;
   scene.environment = texture;
 });
@@ -50,7 +50,6 @@ controls.update();
 
 controls.target.set(0, 1, 0);
 controls.update();
-console.log(controls.target);
 
 // --- Lighting ---
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -59,6 +58,7 @@ scene.add(ambientLight);
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
 dirLight.position.set(5, 10, 7.5);
 dirLight.castShadow = true;
+dirLight.shadow.normalBias = 0.05;
 dirLight.shadow.mapSize.width = 1024;
 dirLight.shadow.mapSize.height = 1024;
 scene.add(dirLight);
@@ -69,7 +69,7 @@ const loader = new GLTFLoader();
 let bell: Bell | undefined;
 
 loader.load(
-  "bell.glb",
+  `${import.meta.env.BASE_URL}bell.glb`,
   (gltf) => {
     const model = gltf.scene;
 
